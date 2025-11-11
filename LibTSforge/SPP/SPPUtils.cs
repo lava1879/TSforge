@@ -263,7 +263,7 @@ namespace LibTSforge.SPP
             switch (version)
             {
                 case PSVersion.Vista:
-                    return new PhysicalStoreWin7(psPath, production);
+                    return new PhysicalStoreVista(psPath, production);
                 case PSVersion.Win7:
                     return new PhysicalStoreWin7(psPath, production);
                 default:
