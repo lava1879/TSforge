@@ -166,9 +166,12 @@ namespace LibTSforge.PhysicalStore
             {
                 CRCBlock block;
 
+                // Build 6469 (Vista with sppsvc) uses Modern CRC blocks
+                // Real Vista uses CRCBlockVista
+                // For now, always use Modern for Vista to support 6469
                 if (Version == PSVersion.Vista)
                 {
-                    block = new CRCBlockVista();
+                    block = new CRCBlockModern();
                 }
                 else
                 {
@@ -186,10 +189,12 @@ namespace LibTSforge.PhysicalStore
 
             foreach (CRCBlock block in Blocks)
             {
+                // Build 6469 uses Modern CRC blocks even with Vista outer format
                 if (Version == PSVersion.Vista)
                 {
-                    ((CRCBlockVista)block).Encode(writer);
-                } else
+                    ((CRCBlockModern)block).Encode(writer);
+                } 
+                else
                 {
                     ((CRCBlockModern)block).Encode(writer);
                 }
