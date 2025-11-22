@@ -15,7 +15,7 @@ namespace LibTSforge.SPP
         {
             ServiceController sc;
 
-            string svcName = version == PSVersion.Vista ? "slsvc" : "sppsvc";
+            string svcName = "sppsvc";
 
             try
             {
@@ -84,17 +84,17 @@ namespace LibTSforge.SPP
 
                 try
                 {
-                    sc = new ServiceController("slsvc");
+                    sc = new ServiceController("sppsvc");
 
                     if (sc.Status == ServiceControllerStatus.Running)
                         return;
                 }
                 catch (InvalidOperationException ex)
                 {
-                    throw new InvalidOperationException("Unable to access slsvc: " + ex.Message);
+                    throw new InvalidOperationException("Unable to access sppsvc: " + ex.Message);
                 }
 
-                Logger.WriteLine("Starting slsvc...");
+                Logger.WriteLine("Starting sppsvc...");
 
                 bool started = false;
 
@@ -113,7 +113,7 @@ namespace LibTSforge.SPP
                     }
                     catch (InvalidOperationException ex)
                     {
-                        Logger.WriteLine("Warning: Starting slsvc failed, retrying. Details: " + ex.Message);
+                        Logger.WriteLine("Warning: Starting sppsvc failed, retrying. Details: " + ex.Message);
                         System.Threading.Thread.Sleep(500);
                         continue;
                     }
@@ -122,9 +122,9 @@ namespace LibTSforge.SPP
                 }
 
                 if (!started)
-                    throw new System.TimeoutException("Failed to start slsvc");
+                    throw new System.TimeoutException("Failed to start sppsvc");
 
-                Logger.WriteLine("slsvc started successfully.");
+                Logger.WriteLine("sppsvc started successfully.");
             }
 
             SLApi.RefreshLicenseStatus();
