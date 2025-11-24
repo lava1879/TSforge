@@ -1,153 +1,160 @@
-# TSforge
+# TSforge for Windows 7 build 6469
 
-By WitherOrNot & asdcorp
+## Introduction
 
-## About
+**[Windows 7 build 6469](https://betawiki.net/wiki/Windows_7_build_6469)** is the earliest available build of [Windows 7](https://betawiki.net/wiki/Windows_7), which was compiled on October 2nd, 2007, and uploaded to [BetaArchive](https://betawiki.net/wiki/BetaArchive) *(later taken down)* on April 26th, 2011. 
 
-A collection of activation/evaluation extension methods for Windows Vista through 11.
+**You can download this build from [archive.org](https://archive.org/details/6469.1.071002-1531-x-86fre-client-en-us-gb-1-culxfre-en-dvd).**
 
-Note: We provide no support for direct use of this tool. The only supported implementation of the methods presented here is in [Microsoft Activation Scripts](https://massgrave.dev).
+Running this build requires the hardware clock to be set to a date between October 2, 2007 *(its compile date)* and April 4, 2008, when its timebomb expires and the system becomes effectively unusable.
 
-Included methods and tools:
-- ZeroCID - Permanent activation until reinstall/feature upgrade
-- KMS4k - Offline KMS activation for over 4000 years
-- AVMA4k - Offline AVMA activation for over 4000 years (Server 2012 R2+ only)
-- Reset Rearm Count - Reset rearm counter for infinite evaluation
-- Reset Eval Period - Reset evaluation period for infinite evaluation
-- Dump/Load Trusted Store - Dump and load trusted store data
-- Delete Unique ID - Delete a product key's unique ID to prevent online validation
-- Install Generated Product Key - Install generated product key data for any product
-- KMS Charger - Charge an existing KMS server to allow immediate use for activation
-- Clear Tamper State - Clear the tamper state set due to store corruption or deletion
-- Remove Evaluation Key Lock - Remove the product key change lock set for evaluation product keys
-- Set IID Parameters - Set parameters for IID independently of installed key
+Due to its earliness, this build identifies itself as [Windows Vista](https://betawiki.net/wiki/Windows_Vista) in most areas. Curiously, the EULA refers to this build as "Microsoft Windows Vista Service Pack 1", implying that this build was forked from an early Windows Vista Service Pack 1 build, which we’ll see reflected heavily in this build’s activation system.
+
+The goal of this project is to port over MASSGRAVE's [TSforge](https://github.com/massgravel/TSforge) *(with both its ZeroCID and KMS4k methods)* to this specific build, allowing permanent *or effectively infinite* activation.
+
+## A Meaningless Goal
+### Background
+
+Windows activation is managed by a subsystem called the Software Protection Platform (SPP). SPP stores information about the activation state in files called the "physical store" and "token store". The physical store's contents are cryptographically protected and integrity-checked by `sppsvc`/`spsys`, preventing users from easily modifying it.
+
+The physical store for **Windows 7 build 6469** is found at `C:\Windows\System32\7B296FB0-376B-497e-B012-9C450E1B7327-2-0.C7483456-A289-439d-8115-601632D005A0` and `C:\Windows\System32\7B296FB0-376B-497e-B012-9C450E1B7327-2-1.C7483456-A289-439d-8115-601632D005A0`, similar to where Windows Vista's physical store is located.
+
+Normally, accessing the physical store on this build *(and on Windows Vista in general)* isn’t really possible, because `spsys.sys`, a key driver used by the Software Protection Platform (SPP), holds a permanent handle on it. Unlike later versions of Windows, Vista doesn’t provide any built-in way for SlSvc *(renamed to **sppsvc** in this build)* to tell the driver to unload, so there’s no straightforward method to free that handle.
+
+However, thanks to the work of [@InvoxiPlayGames](https://github.com/InvoxiPlayGames) on [vistaspctl](https://github.com/InvoxiPlayGames/vistaspctl), and its later integration into TSforge, this limitation is effectively bypassed, revealing that the underlying SPP loader driver exposes a set of unused `ioctls` that let you manually start and stop the protection driver without relying on SlSvc. In practice, this means the driver can be safely paused long enough to access the physical store and then restarted afterward, something that would otherwise be impossible on Vista.
+
+With this information, the next step was to try porting [ZeroCID](https://massgrave.dev/tsforge#zerocid) *(and later on KMS4k)* to build 6469. It didn’t take long to realize that this build had its own set of complications, making this harder than initially anticipated.
+
+### Vista Meets 7
+
+Windows 7 build 6469 presented a unique challenge because it's a transitional build with characteristics of both Windows Vista and Windows 7. This meant that the existing ZeroCID *(and KMS4k)* implementations for Vista and 7 in TSforge simply wouldn't work. 
+
+Research revealed the following:
+
+- The physical store uses **Vista's structure** (no key namespace in blocks)
+  
+- The cryptography uses **Vista's salted SHA-1** (not Windows 7's HMAC)
+  
+- Internally, the data format uses Windows 7's CRC blocks (`CRCBlockModern`)
+ 
+- The timer structure uses **Vista's simple format** (16 bytes instead of Windows 7's 32 bytes)
+
+For KMS4k:
+ 
+- The KMS paths follow Windows 7's convention `msft:spp/kms/bind/2.0/...`
+
+With this information in hand, it was only a matter of changing things around to make ZeroCID functional.
+
+### Making It Work
+
+The implementation required several specific changes to handle Windows 7 build 6469's hybrid nature:
+
+- **Unified the IID hash generation:** Build 6469 uses the same SHA-256 hashing as Windows 7 (full 32 bytes) rather than Vista's truncated 16-byte version.
+
+- **Updated product key data handling:** The code now checks for `SppPkeyShortAuthenticator` *(from Windows 7)* first before falling back to `PKeyBasicInfo` *(from Vista)*, as build 6469 stores key data using the newer format.
+
+- **Used Windows 7's phone activation version:** Changed from conditional versioning to always use phone version `"7.0"` and index by `pkeyId` rather than `actId`.
+
+With these changes, `TSforge.exe /ver vista /zcid` **successfully activates Windows 7 build 6469 permanently**.
+
+<div align="center">
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/1c6be4b1-0bfa-483f-a3ed-a712bbbf9345" />
+
+<em>Figure 1: Windows 7 build 6469 activated permanently using ZeroCID.</em>
+
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/cc607a22-56a6-42cb-b486-2d7a7b7e3e8e" />
+
+<em>Figure 2: `slmgr /dli` showing the activation status of Windows.</em>
+</div>
+
+These tests were all conducted using Windows Vista Business as the installed edition.
+
+#### The following retail Generic Keys can be used to install this build, and subsequently activated using ZeroCID:
+
+Edition|EditionID|Generic Key|Key Type
+----|----|----|----
+Business|Business|4D2XH-PRBMM-8Q22B-K8BM3-MRW4W|Retail
+Business N|BusinessN|76884-QXFY2-6Q2WX-2QTQ8-QXX44|Retail
+Enterprise|Enterprise|YQPQV-RW8R3-XMPFG-RXG9R-JGTVF|Retail
+Enterprise N|EnterpriseN|Q7J9R-G63R4-BFMHF-FWM9R-RWDMV|Retail
+Home Basic|HomeBasic|RCG7P-TX42D-HM8FM-TCFCW-3V4VD|Retail
+Home Basic N|HomeBasicN|HY2VV-XC6FF-MD6WV-FPYBQ-GFJBT|Retail
+Home Premium|HomePremium|X9HTF-MKJQQ-XK376-TJ7T4-76PKF|Retail
+Home Premium N|HomePremiumN|KJ6TP-PF9W2-23T3Q-XTV7M-PXDT2|Retail
+Starter|Starter|X9PYV-YBQRV-9BXWV-TQDMK-QDWK4|Retail
+Ultimate|Ultimate|VMCB9-FDRV6-6CDQM-RV23K-RP8F7|Retail
+Ultimate N|UltimateN|CVX38-P27B4-2X8BT-RXD4J-V7CKX|Retail
+
+## Time Is Infinite
+
+Using [KMS4k](https://massgrave.dev/tsforge#kms4k), fake cached KMS server response data is directly written to the trusted store. Unlike via normal KMS emulators, this method can arbitrarily set the activation expiration up to a maximum of 2,147,483,640 (2³¹ − 8) minutes, or 4083 years.
+
+This allows for offline KMS activation that is effectively infinite for all practical purposes.
+
+### From Vista to 7, and Back Again
+
+Since ZeroCID already forced me to reverse the hybrid licensing behavior in build 6469, getting KMS4k running afterwards wasn’t especially painful, as most of the digging had already been done. And, just like previous research indicated, the KMS object paths ended up matching Windows 7’s format exactly: `msft:spp/kms/bind/2.0/...`.
+
+However, the original Vista KMS4k code used an entirely different approach, writing raw binary data with length prefixes instead of using variable bags. Build 6469 needed the Windows 7 approach: a proper variable bag containing three `CRCBlockModern` blocks (KMS response, `msft:rm/algorithm/hwid/4.0`, and `SppBindingLicenseData`).
+
+#### The key implementation changes were:
+
+- Modified the Vista code path to create a VariableBag with `CRCBlockModern` blocks instead of raw binary data, matching Windows 7's structure while using Vista's simpler `VistaTimer` *(16 bytes instead of 32)*.
+
+- Fixed variable bag serialization to properly encode blocks based on their actual type. The original code assumed Vista versions only used `CRCBlockVista`, but build 6469 needed `CRCBlockModern` blocks to serialize correctly even when using `PSVersion.Vista`.
+
+- Used Windows 7's KMS paths (`msft:spp/kms/bind/2.0/store` and `msft:spp/kms/bind/2.0/timer`) instead of Vista's old paths, while maintaining Vista's physical store structure.
+
+The solution was validated by comparing physical store dumps before and after a KMS activation using [vlmcsd](https://github.com/Wind4/vlmcsd), ensuring the data matched the exact format build 6469 expected.
+
+After these changes, `TSforge.exe /ver vista /kms4k` successfully activates build 6469 with an effectively infinite expiration.
+
+<div align="center">
+<img width="800" height="600" alt="image" src="https://github.com/user-attachments/assets/0d5df8e2-ce5d-4581-9f4e-03a9afcf0d7b" />
+
+<em>Windows 7 build 6469 activated with a volume activation expiration of 2,147,480,760 minutes using KMS4k.</em>
+
+#### The following Generic Volume License Keys (GVLKs) can be used to install this build, and subsequently activated using KMS4k:
+
+Edition|EditionID|Generic Volume License Key
+----|----|----
+Enterprise|Enterprise|VKK3X-68KWM-X2YGT-QR4M6-4BWMV
+Business|Business|YFKBB-PQJJV-G996G-VWGXY-2V3X8
+BusinessN|BusinessN|HMBQG-8H2RH-C77VX-27R82-VMQBT
+EnterpriseN|EnterpriseN|VTC42-BM838-43QHV-84HX6-XJXKV
+
+</div>
 
 ## Usage
 
-```
-Usage: TSforge [/dump <filePath> (<encrFilePath>)] [/load <filePath>] [/kms4k] [/avma4k] [/zcid] [/rtmr] [/duid] [/igpk] [/kmsc] [/ctpr] [/revl] [/siid <5/9> <group> <serial> <security>] [/prod] [/test] [<activation id>] [/ver <version override>]
-Options:
-        /dump <filePath> (<encrFilePath>)         Dump and decrypt the physical store to the specified path.
-        /load <filePath>                          Load and re-encrypt the physical store from the specified path.
-        /kms4k                                    Activate using KMS4k. Only supports KMS-activatable editions.
-        /avma4k                                   Activate using AVMA4k. Only supports Windows Server 2012 R2+.
-        /zcid                                     Activate using ZeroCID. Only supports phone-activatable editions.
-        /rtmr                                     Reset grace/evaluation period timers.
-        /rrmc                                     Reset the rearm count.
-        /duid                                     Delete product key Unique ID used in online key validation.
-        /igpk                                     Install auto-generated/fake product key according to the specified Activation ID
-        /kmsc                                     Reset the charged count on the local KMS server to 25. Requires an activated KMS host.
-        /ctpr                                     Remove the tamper flags that get set in the physical store when sppsvc detects an attempt to tamper with it.
-        /revl                                     Remove the key change lock in evaluation edition store.
-        /siid <5/9> <group> <serial> <security>   Set Installation ID parameters independently of installed key. 5/9 argument specifies PKEY200[5/9] key algorithm.
-        /prod                                     Use SPP production key.
-        /test                                     Use SPP test key.
-        /ver <version>                            Override the detected version. Available versions: vista, 7, 8, blue, modern.
-        <activation id>                           A specific activation ID. Useful if you want to activate specific addons like ESU.
-        /?                                        Display this help message.
-```
+Activating **[Windows 7 build 6469](https://betawiki.net/wiki/Windows_7_build_6469)** using this fork of [TSforge](https://github.com/massgravel/TSforge) is simple and involves the same steps one would take to activate Vista with TSforge.
+
+*You'll need to follow the [build instructions](https://github.com/lava1879/TSforge?tab=readme-ov-file#build-instructions) first in order to obtain ready to use, built binaries.* 
+
+1. Open the folder containing the binaries in an elevated command prompt.
+2. Copy over **[System.Core.dll](https://gofile.io/d/eqx0eW)** to the folder containing the binaries.
+3. Run `TSforge.exe /ver vista /zcid` for ZeroCID, or `TSforge.exe /ver vista /kms4k` for KMS4k.
+4. **Windows 7 build 6469 should now be activated** using either activation method you used. `slmgr /dlv` can be used to check the activation status and its details.
+
+This fork of TSforge is very unlikely to work on any other build of Windows. If you're interested in activating anything other beta builds or any Windows build in general, refer to [Microsoft Activation Scripts](https://massgrave.dev/).
 
 ## FAQ
 
-### How does this work?
+### What should I do if I see a "Windows license is expired" message?
 
-This tool manipulates data stored in a file known as the "physical store", which is used by Windows to store critical activation data, including expiry timers and the HWIDs bound to each license. Thanks to our reverse-engineering efforts, we are able to insert our own data into the physical store, allowing us to add custom activation data for any product managed by Windows' Software Protection Platform. The data in the physical store is also known as the "trusted store", leading to the name "TSforge".
+This build requires the system clock to be set between October 2, 2007 *(its compile date)* and April 4, 2008. Once the timebomb expires, Windows will display this message at login, effectively rendering the system unusable.
 
-### What advantages does this method have over other activation methods?
+### How can I get help with activation or related issues?
 
-TSforge offers the most advantages for activating older Windows versions, such as Windows 7 through 8.1, as it can permanently activate any edition of these versions without modifications to the boot process or Windows system executables. TSforge is also the only public activator capable of activating any Windows addon, making it useful for users who wish to activate ESU licenses. Additionally, TSforge is the only public activator to offer hardware-invariant activation without any persistent network connections, added services/tasks, or injected DLLs.
+You can create a new issue on the project repository, and I’ll investigate it.
 
-TLDR: You should only use TSforge if you are using an old Windows release or if you want to activate addons such as ESU to extend the support end date.
+### Why would anyone activate this build?
 
-### What are the downsides?
+While it's pointless, activating it can be interesting for enthusiasts. This build offers a unique glimpse into early Windows 7 development, and allowed me to experiment with TSforge’s ZeroCID and KMS4k activation techniques on Windows 7's very first known build.
 
-For Windows 10 and 11, it is recommended to use the HWID method to activate Windows. TSforge is both less reliable and lacks features that HWID offers, such as the ability to survive feature upgrades and complete OS reinstalls. For Windows 7 through 8.1, there are no notable downsides.
+### How can I learn more about TSforge, its team and its inner workings?
 
-### Do any of the methods here require internet?
-
-No, none of the methods presented here require connecting to the internet in order to function. Everything is done locally.
-
-### How can I install specific licenses without having to install the corresponding product key?
-
-You can use the `/igpk` switch in TSforge in order to install licenses by only using an Activation ID. You can get a list of all installable licenses and their Activation ID's by running `slmgr /dlv all`. You can click into the popup window and press CTRL + C to copy all of the information. Once you have found your desired licenses' Activation ID, run `/igpk` like so: `TSforge.exe /igpk <activation id>`.
-
-### How do I activate a KMS Host server?
-
-You can use the `/igpk` and `/zcid` options with the activation ID of the KMS Host SKU to be activated. You can then use the `/kmsc` option with this activation ID to charge the KMS server with 25 clients. Please note that KMS servers will maintain their client counts for a maximum of 30 days.
-
-### What features are implemented in Windows Vista?
-
-The following options are implemented:
-
- - `/dump`
- - `/load`
- - `/zcid`
- - `/kms4k`
- - `/rtmr`
- - `/rrmc`
- - `/kmsc`
- - `/ctpr`
-
-The following options are NOT implemented:
-
- - `/duid` - Key Unique ID is not removable from Vista physical store
- - `/igpk` - Product key data is derived directly from the key string, preventing forgery
- - `/siid` - IID is also derived directly from the key string
- - `/revl` - Eval key lock is not present on Vista
-
- Effectively, this means that a product key must be provided to activate a given SKU. Additionally, ZeroCID on Vista/Server 2008 lacks protection against deactivation due to the WGA update KB929391, though this update is no longer offered via Windows Update.
-
-### How do I prevent de-activation due to WAT on Windows 7?
-
-If generic keys are installed, you need to run `TSforge.exe /duid` to remove the product key's unique ID. This will prevent WAT from verifying the key online. Installing a fake product key with `TSforge.exe /igpk <activation id>` will have an equivalent effect. Alternatively, you can use a non-generic key to bypass this check, though many publicly available keys are blocked by WAT.
-
-### AVMA4k doesn't work in my virtual machine, why?
-
-Windows doesn't support AVMA activation under VM software that fails to provide [Hyper-V Enlightenments](https://www.qemu.org/docs/master/system/i386/hyperv.html). This primarily means that AVMA4k is only supported on VMs running under a [correctly configured QEMU instance](https://blog.wikichoon.com/2014/07/enabling-hyper-v-enlightenments-with-kvm.html) or Hyper-V. If your VM's activation status is `Notification` with the status code `0xC004FD01` after using AVMA4k, you will need to use another activation method.
-
-### Does TSforge support beta versions of Windows?
-
-It can, though we do not provide official support for these versions. TSforge works on most insider/beta builds of Windows past Windows 8.1. Beta builds prior to build 9600 are likely to face issues, as the internal data formats used by SPP were constantly changing during this period of development. Builds with similar licensing behavior to retail versions are the most likely to work with the current TSforge codebase. For other builds, you may need to manually edit the source code of LibTSforge to get it to work.
-
-### How do I remove this activation?
-
-Run [Microsoft Activation Scripts](https://massgrave.dev), select `Troubleshoot` > `Fix Licensing`. This will reset the physical store and revert any changes made by TSforge.
-
-### Can Microsoft patch this?
-
-Yes, albeit with some amount of difficulty.
-
-### Will they?
-
-Probably not. If they do, please tell us so we can laugh to ourselves like a bunch of lunatics for the rest of the week.
-
-## Build instructions
-
-1. Download [.NET SDK 9.0.2](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-9.0.200-windows-x64-binaries)
-2. Extract the contents of the downloaded archive to `C:\dotnet-sdk-9.0.200-win-x64`
-3. Open command prompt in the directory where `TSforge.sln` can be found
-4. Run `C:\dotnet-sdk-9.0.200-win-x64\dotnet.exe build -c Release TSforge.sln`
-5. Built binaries can be found in `TSforgeCLI\bin\Release\net35`
-
-## Credits
-
-### Core Research and Development
-
-- WitherOrNot - Lead tool development, reverse engineering, testing
-- asdcorp - Initial demonstrations, reverse engineering, tool development, testing
-- abbodi1406 - Reverse engineering, development, testing
-- Lyssa - Reverse engineering, tool development, testing
-
-### Other Contributions
-
-- Emma (IPG) - Vista SPSys IOCTLs and physical store format
-- May - Code formatting, build setup
-
-### Special Thanks
-
-- BetaWiki - Documenting leaked beta builds used for reverse engineering
-- Rairii - Assistance with initial reverse engineering efforts
-- Microsoft - A fun challenge
+You can check out [TSforge's GitHub repository](https://github.com/massgravel/TSforge), [its blog post](https://massgrave.dev/blog/tsforge), or [its documentation in MAS](https://massgrave.dev/tsforge).
 
 ## License
 
