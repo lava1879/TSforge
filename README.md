@@ -129,14 +129,22 @@ EnterpriseN|EnterpriseN|VTC42-BM838-43QHV-84HX6-XJXKV
 
 Activating **[Windows 7 build 6469](https://betawiki.net/wiki/Windows_7_build_6469)** using this fork of [TSforge](https://github.com/massgravel/TSforge) is simple and involves the same steps one would take to activate Vista with TSforge.
 
-*You'll need to follow the [build instructions](https://github.com/lava1879/TSforge?tab=readme-ov-file#build-instructions) first in order to obtain ready to use, built binaries.* 
+*You can either obtain ready to use binaries from [Releases](https://github.com/lava1879/TSforge/releases), or follow the [build instructions](https://github.com/lava1879/TSforge?tab=readme-ov-file#build-instructions) in order to build your own.* 
 
 1. Open the folder containing the binaries in an elevated command prompt.
-2. Copy over **[System.Core.dll](https://gofile.io/d/eqx0eW)** to the folder containing the binaries.
+2. Copy over **[System.Core.dll](https://gofile.io/d/eqx0eW)** *(if it's not already there)* to the folder containing the binaries.
 3. Run `TSforge.exe /ver vista /zcid` for ZeroCID, or `TSforge.exe /ver vista /kms4k` for KMS4k.
 4. **Windows 7 build 6469 should now be activated** using either activation method you used. `slmgr /dlv` can be used to check the activation status and its details.
 
 This fork of TSforge is very unlikely to work on any other build of Windows. If you're interested in activating anything other beta builds or any Windows build in general, refer to [Microsoft Activation Scripts](https://massgrave.dev/).
+
+## Build instructions
+
+1. Download [.NET SDK 9.0.2](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-9.0.200-windows-x64-binaries)
+2. Extract the contents of the downloaded archive to `C:\dotnet-sdk-9.0.200-win-x64`
+3. Open command prompt in the directory where `TSforge.sln` can be found
+4. Run `C:\dotnet-sdk-9.0.200-win-x64\dotnet.exe build -c Release TSforge.sln`
+5. Built binaries can be found in `TSforgeCLI\bin\Release\net35`
 
 ## FAQ
 
