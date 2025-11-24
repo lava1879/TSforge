@@ -64,19 +64,43 @@ namespace LibTSforge.Activators
                     VistaTimer vistaTimer = new VistaTimer
                     {
                         Time = time2,
-                        Expiry = Constants.TimerMax
+                        Expiry = expiry
                     };
 
-                    string vistaTimerName = string.Format("msft:sl/timer/VLExpiration/VOLUME/{0}/{1}", appId, actId);
+                    byte[] hwidBlock = Constants.UniversalHWIDBlock;
+                    byte[] kmsResp = Constants.KMSv4Response;
 
-                    store.DeleteBlock(key, vistaTimerName);
-                    store.DeleteBlock(key, actId.ToString());
+                    VariableBag kmsBinding = new VariableBag(version);
+                    
+                    kmsBinding.Blocks.AddRange(new[]
+                    {
+                        new CRCBlockModern
+                        {
+                            DataType = CRCBlockType.BINARY,
+                            Key = new byte[] { },
+                            Value = kmsResp
+                        },
+                        new CRCBlockModern
+                        {
+                            DataType = CRCBlockType.STRING,
+                            Key = new byte[] { },
+                            ValueAsStr = "msft:rm/algorithm/hwid/4.0"
+                        },
+                        new CRCBlockModern
+                        {
+                            DataType = CRCBlockType.BINARY,
+                            KeyAsStr = "SppBindingLicenseData",
+                            Value = hwidBlock
+                        }
+                    });
 
-                    BinaryWriter writer = new BinaryWriter(new MemoryStream());
-                    writer.Write(Constants.KMSv4Response.Length);
-                    writer.Write(Constants.KMSv4Response);
-                    writer.Write(Constants.UniversalHWIDBlock);
-                    byte[] kmsData = writer.GetBytes();
+                    byte[] kmsBindingData = kmsBinding.Serialize();
+
+                    string storeVal = string.Format("msft:spp/kms/bind/2.0/store/{0}/{1}", appId, actId);
+                    string timerVal = string.Format("msft:spp/kms/bind/2.0/timer/{0}/{1}", appId, actId);
+
+                    store.DeleteBlock(key, storeVal);
+                    store.DeleteBlock(key, timerVal);
 
                     store.AddBlocks(new[]
                     {
@@ -85,7 +109,7 @@ namespace LibTSforge.Activators
                             Type = BlockType.TIMER,
                             Flags = 0,
                             KeyAsStr = key,
-                            ValueAsStr = vistaTimerName,
+                            ValueAsStr = timerVal,
                             Data = vistaTimer.CastToArray()
                         },
                         new PSBlock
@@ -93,8 +117,8 @@ namespace LibTSforge.Activators
                             Type = BlockType.NAMED,
                             Flags = 0,
                             KeyAsStr = key,
-                            ValueAsStr = actId.ToString(),
-                            Data = kmsData
+                            ValueAsStr = storeVal,
+                            Data = kmsBindingData
                         }
                     });
                 }

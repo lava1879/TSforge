@@ -164,16 +164,7 @@ namespace LibTSforge.PhysicalStore
 
             while (reader.BaseStream.Position < len - 0x10)
             {
-                CRCBlock block;
-
-                if (Version == PSVersion.Vista)
-                {
-                    block = new CRCBlockVista();
-                }
-                else
-                {
-                    block = new CRCBlockModern();
-                }
+                CRCBlock block = new CRCBlockModern();
 
                 block.Decode(reader);
                 Blocks.Add(block);
@@ -186,13 +177,7 @@ namespace LibTSforge.PhysicalStore
 
             foreach (CRCBlock block in Blocks)
             {
-                if (Version == PSVersion.Vista)
-                {
-                    ((CRCBlockVista)block).Encode(writer);
-                } else
-                {
-                    ((CRCBlockModern)block).Encode(writer);
-                }
+                block.Encode(writer);
             }
 
             return writer.GetBytes();
