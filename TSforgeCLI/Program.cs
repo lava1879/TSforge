@@ -266,7 +266,7 @@ namespace TSforgeCLI
             Logger.WriteLine("\t/siid <5/9> <group> <serial> <security>   Set Installation ID parameters independently of installed key. 5/9 argument specifies PKEY200[5/9] key algorithm.");
             Logger.WriteLine("\t/prod                                     Use SPP production key.");
             Logger.WriteLine("\t/test                                     Use SPP test key.");
-            Logger.WriteLine("\t/ver <version>                            Override the detected version. Available versions: vista, 7, 8, blue, modern.");
+            Logger.WriteLine("\t/ver <version>                            Override the detected version. Available versions: vista, 6469, 7, 8, blue, modern.");
             Logger.WriteLine("\t<activation id>                           A specific activation ID. Useful if you want to activate specific addons like ESU.");
             Logger.WriteLine("\t/?                                        Display this help message.");
         }
@@ -276,6 +276,7 @@ namespace TSforgeCLI
             switch (ver.Trim().ToLowerInvariant())
             {
                 case "vista": return PSVersion.Vista;
+                case "6469": return PSVersion.Win6469;
                 case "7": return PSVersion.Win7;
                 case "8": return PSVersion.Win8;
                 case "blue": return PSVersion.WinBlue;

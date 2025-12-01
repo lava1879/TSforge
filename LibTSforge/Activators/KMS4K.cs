@@ -64,6 +64,45 @@ namespace LibTSforge.Activators
                     VistaTimer vistaTimer = new VistaTimer
                     {
                         Time = time2,
+                        Expiry = Constants.TimerMax
+                    };
+
+                    string vistaTimerName = string.Format("msft:sl/timer/VLExpiration/VOLUME/{0}/{1}", appId, actId);
+
+                    store.DeleteBlock(key, vistaTimerName);
+                    store.DeleteBlock(key, actId.ToString());
+
+                    BinaryWriter writer = new BinaryWriter(new MemoryStream());
+                    writer.Write(Constants.KMSv4Response.Length);
+                    writer.Write(Constants.KMSv4Response);
+                    writer.Write(Constants.UniversalHWIDBlock);
+                    byte[] kmsData = writer.GetBytes();
+
+                    store.AddBlocks(new[]
+                    {
+                        new PSBlock
+                        {
+                            Type = BlockType.TIMER,
+                            Flags = 0,
+                            KeyAsStr = key,
+                            ValueAsStr = vistaTimerName,
+                            Data = vistaTimer.CastToArray()
+                        },
+                        new PSBlock
+                        {
+                            Type = BlockType.NAMED,
+                            Flags = 0,
+                            KeyAsStr = key,
+                            ValueAsStr = actId.ToString(),
+                            Data = kmsData
+                        }
+                    });
+                }
+                else if (version == PSVersion.Win6469)
+                {
+                    VistaTimer vistaTimer = new VistaTimer
+                    {
+                        Time = time2,
                         Expiry = expiry
                     };
 

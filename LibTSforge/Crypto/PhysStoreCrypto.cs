@@ -50,6 +50,7 @@ namespace LibTSforge.Crypto
             Dictionary<PSVersion, int> versionTable = new Dictionary<PSVersion, int>
             {
                 {PSVersion.Vista, 2},
+                {PSVersion.Win6469, 2},
                 {PSVersion.Win7, 5},
                 {PSVersion.Win8, 1},
                 {PSVersion.WinBlue, 2},

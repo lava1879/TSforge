@@ -61,7 +61,7 @@ namespace LibTSforge.SPP
 
             Logger.WriteLine(string.Format("{0} stopped successfully.", svcName));
 
-            if (version == PSVersion.Vista && SPSys.IsSpSysRunning())
+            if ((version == PSVersion.Vista || version == PSVersion.Win6469) && SPSys.IsSpSysRunning())
             {
                 Logger.WriteLine("Unloading spsys...");
 
@@ -78,7 +78,7 @@ namespace LibTSforge.SPP
 
         public static void RestartSPP(PSVersion version)
         {
-            if (version == PSVersion.Vista)
+            if (version == PSVersion.Vista || version == PSVersion.Win6469)
             {
                 ServiceController sc;
 
@@ -153,6 +153,7 @@ namespace LibTSforge.SPP
             switch (version)
             {
                 case PSVersion.Vista:
+                case PSVersion.Win6469:
                 case PSVersion.Win7:
                     return Directory.GetFiles(
                         Environment.GetFolderPath(Environment.SpecialFolder.System),
@@ -205,6 +206,7 @@ namespace LibTSforge.SPP
             switch (version)
             {
                 case PSVersion.Vista:
+                case PSVersion.Win6469:
                     return Path.Combine(
                         Environment.ExpandEnvironmentVariables("%WINDIR%"),
                         @"ServiceProfiles\NetworkService\AppData\Roaming\Microsoft\SoftwareLicensing\tokens.dat"
@@ -263,6 +265,7 @@ namespace LibTSforge.SPP
             switch (version)
             {
                 case PSVersion.Vista:
+                case PSVersion.Win6469:
                     return new PhysicalStoreVista(psPath, production);
                 case PSVersion.Win7:
                     return new PhysicalStoreWin7(psPath, production);

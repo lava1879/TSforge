@@ -93,6 +93,7 @@ namespace LibTSforge.PhysicalStore
         private readonly FileStream TSPrimary;
         private readonly FileStream TSSecondary;
         private readonly bool Production;
+        private readonly PSVersion version = PSVersion.Vista;
 
         public byte[] Serialize()
         {
@@ -257,18 +258,21 @@ namespace LibTSforge.PhysicalStore
 
         public PhysicalStoreVista(string primaryPath, bool production)
         {
+            if (version == PSVersion.Vista || version == PSVersion.Win6469) {
             TSPrimary = File.Open(primaryPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             TSSecondary = File.Open(primaryPath.Replace("-0.", "-1."), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             Production = production;
-
+            
             Deserialize(PhysStoreCrypto.DecryptPhysicalStore(TSPrimary.ReadAllBytes(), production, PSVersion.Vista));
             TSPrimary.Seek(0, SeekOrigin.Begin);
+            }
         }
 
         public void Dispose()
         {
             if (TSPrimary.CanWrite && TSSecondary.CanWrite)
             {
+                if (version == PSVersion.Vista || version == PSVersion.Win6469) {
                 byte[] data = PhysStoreCrypto.EncryptPhysicalStore(Serialize(), Production, PSVersion.Vista);
 
                 TSPrimary.SetLength(data.LongLength);
@@ -282,18 +286,23 @@ namespace LibTSforge.PhysicalStore
 
                 TSPrimary.Close();
                 TSSecondary.Close();
+                }
             }
         }
 
         public byte[] ReadRaw()
         {
-            byte[] data = PhysStoreCrypto.DecryptPhysicalStore(TSPrimary.ReadAllBytes(), Production, PSVersion.Vista);
+            byte[] data = null;
+            if (version == PSVersion.Vista || version == PSVersion.Win6469) {
+            data = PhysStoreCrypto.DecryptPhysicalStore(TSPrimary.ReadAllBytes(), Production, PSVersion.Vista);
+            }
             TSPrimary.Seek(0, SeekOrigin.Begin);
             return data;
         }
 
         public void WriteRaw(byte[] data)
         {
+            if (version == PSVersion.Vista || version == PSVersion.Win6469) {
             byte[] encrData = PhysStoreCrypto.EncryptPhysicalStore(data, Production, PSVersion.Vista);
 
             TSPrimary.SetLength(encrData.LongLength);
@@ -307,6 +316,7 @@ namespace LibTSforge.PhysicalStore
 
             TSPrimary.Close();
             TSSecondary.Close();
+            }
         }
 
         public IEnumerable<PSBlock> FindBlocks(string valueSearch)

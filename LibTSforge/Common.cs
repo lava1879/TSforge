@@ -9,6 +9,7 @@ namespace LibTSforge
     public enum PSVersion
     {
         Vista,
+        Win6469,
         Win7,
         Win8,
         WinBlue,

@@ -47,7 +47,7 @@ namespace LibTSforge.Activators
             string instId = SLApi.GetInstallationID(actId);
             Guid pkeyId = SLApi.GetInstalledPkeyID(actId);
 
-            if (version == PSVersion.Vista || version == PSVersion.Win7)
+            if (version == PSVersion.Vista || version == PSVersion.Win6469 || version == PSVersion.Win7)
             {
                 Deposit(actId, instId);
             }
@@ -66,7 +66,11 @@ namespace LibTSforge.Activators
 
                 byte[] iidHash;
 
-                if (version == PSVersion.Vista || version == PSVersion.Win7)
+                if (version == PSVersion.Vista)
+                {
+                    iidHash = CryptoUtils.SHA256Hash(Utils.EncodeString(instId)).Take(0x10).ToArray();
+                }
+                else if (version == PSVersion.Win6469 || version == PSVersion.Win7)
                 {
                     iidHash = CryptoUtils.SHA256Hash(Utils.EncodeString(instId));
                 }
@@ -88,6 +92,34 @@ namespace LibTSforge.Activators
                 byte[] pkeyData;
 
                 if (version == PSVersion.Vista)
+                {
+                    pkeyData = pkb.GetBlock("PKeyBasicInfo").Value;
+                    string uniqueId = Utils.DecodeString(pkeyData.Skip(0x120).Take(0x80).ToArray());
+                    string extPid = Utils.DecodeString(pkeyData.Skip(0x1A0).Take(0x80).ToArray());
+
+                    uint group;
+                    uint.TryParse(extPid.Split('-')[1], out group);
+
+                    if (group == 0)
+                    {
+                        throw new FormatException("Extended PID has invalid format.");
+                    }
+
+                    ulong shortauth;
+
+                    try
+                    {
+                        shortauth = BitConverter.ToUInt64(Convert.FromBase64String(uniqueId.Split('&')[1]), 0);
+                    } 
+                    catch
+                    {
+                        throw new FormatException("Key Unique ID has invalid format.");
+                    }
+
+                    shortauth |= (ulong)group << 41;
+                    pkeyData = BitConverter.GetBytes(shortauth);
+                }
+                else if (version == PSVersion.Win6469)
                 {
                     CRCBlock shortAuth = pkb.GetBlock("SppPkeyShortAuthenticator");
                     
@@ -157,8 +189,8 @@ namespace LibTSforge.Activators
                 writer.Write(pkeyData);
                 byte[] tsPkeyInfoData = writer.GetBytes();
 
-                string phoneVersion = "7.0";
-                Guid indexSlid = pkeyId;
+                string phoneVersion = version == PSVersion.Vista ? "6.0" : "7.0";
+                Guid indexSlid = version == PSVersion.Vista ? actId : pkeyId;
                 string hwidBlockName = string.Format("msft:Windows/{0}/Phone/Cached/HwidBlock/{1}", phoneVersion, indexSlid);
                 string pkeyInfoName = string.Format("msft:Windows/{0}/Phone/Cached/PKeyInfo/{1}", phoneVersion, indexSlid);
 
@@ -173,7 +205,7 @@ namespace LibTSforge.Activators
                         KeyAsStr = key,
                         ValueAsStr = hwidBlockName,
                         Data = tsHwidData
-                    },
+                    }, 
                     new PSBlock
                     {
                         Type = BlockType.NAMED,
@@ -185,7 +217,7 @@ namespace LibTSforge.Activators
                 });
             }
 
-            if (version != PSVersion.Vista)
+            if (version != PSVersion.Vista && version != PSVersion.Win6469 && version != PSVersion.Win7)
             {
                 Deposit(actId, instId);
             }
