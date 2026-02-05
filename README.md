@@ -132,11 +132,10 @@ Activating **[Windows 7 build 6469](https://betawiki.net/wiki/Windows_7_build_64
 *You can either obtain ready to use binaries from [Releases](https://github.com/lava1879/TSforge/releases), or follow the [build instructions](https://github.com/lava1879/TSforge?tab=readme-ov-file#build-instructions) in order to build your own.* 
 
 1. Open the folder containing the binaries in an elevated command prompt.
-2. Copy over **[System.Core.dll](https://gofile.io/d/eqx0eW)** *(if it's not already there)* to the folder containing the binaries.
-3. Run `TSforge.exe /ver vista /zcid` for ZeroCID, or `TSforge.exe /ver vista /kms4k` for KMS4k.
-4. **Windows 7 build 6469 should now be activated** using either activation method you used. `slmgr /dlv` can be used to check the activation status and its details.
+2. Run `TSforge.exe /ver vista /zcid` for ZeroCID, or `TSforge.exe /ver vista /kms4k` for KMS4k.
+3. **Windows 7 build 6469 should now be activated** using either activation method you used. `slmgr /dlv` can be used to check the activation status and its details.
 
-This fork of TSforge is very unlikely to work on any other build of Windows. If you're interested in activating anything other beta builds or any Windows build in general, refer to [Microsoft Activation Scripts](https://massgrave.dev/).
+This fork of TSforge is very unlikely to work on other Windows builds. If you want to activate other beta builds or Windows in general, refer to [Microsoft Activation Scripts](https://massgrave.dev/).
 
 ## Build instructions
 
