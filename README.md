@@ -4,7 +4,7 @@
 
 **[Windows 7 build 6469](https://betawiki.net/wiki/Windows_7_build_6469)** is the earliest available build of [Windows 7](https://betawiki.net/wiki/Windows_7), which was compiled on October 2nd, 2007, and uploaded to [BetaArchive](https://betawiki.net/wiki/BetaArchive) *(later taken down)* on April 26th, 2011. 
 
-**You can download this build from [archive.org](https://archive.org/details/6469.1.071002-1531-x-86fre-client-en-us-gb-1-culxfre-en-dvd).**
+**You can download this build from [here](https://sharewh.xuexi365.com/share/download/528d22640f70b1da790084b61ef1d1f6).**
 
 Running this build requires the hardware clock to be set to a date between October 2, 2007 *(its compile date)* and April 4, 2008, when its timebomb expires and the system becomes effectively unusable.
 
